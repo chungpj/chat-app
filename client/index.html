@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Chat App</title>
+</head>
+<body>
+    <section class="clock container">
+        <div class="clock__container grid">
+            <div class="clock__content grid">
+                <div class="clock__circle"> <span class="clock__twelve"></span> <span class="clock__three"></span> <span class="clock__six"></span> <span class="clock__nine"></span>
+                    <div class="clock__rounder"></div>
+                    <div class="clock__hour" id="clock-hour"></div>
+                    <div class="clock__minutes" id="clock-minutes"></div>
+                    <div class="clock__seconds" id="clock-seconds"></div> <!-- Dark/light button -->
+                    <div class="clock__theme"> <i class='bx bxs-moon' id="theme-button"></i> </div>
+                </div>
+                <div>
+                    <div class="clock__text">
+                        <div class="clock__text-hour" id="text-hour"></div>
+                        <div class="clock__text-minutes" id="text-minutes"></div>
+                        <div class="clock__text-ampm" id="text-ampm"></div>
+                    </div>
+                    <div class="clock__date">
+                        <!-- <span id="date-day-week"></span> --> <span id="date-day"></span> <span id="date-month"></span> <span id="date-year"></span>
+                    </div>
+                    <div class="price">
+                        <p>BTC/USDT:<span id="btc-price"></span></p>
+                        <p>BNB/USDT:<span id="bnb-price"></span></p>
+                        <p>ETH/USDT:<span id="eth-price"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="grid chat-box">
+            <div class="detailBox">
+                <div class="titleBox"> <label>Chat Box</label> </div>
+                <div class="commentBox">
+                    <p class="taskDescription">Xin chào: <span class="user" id="user-name"></span>. Chào mừng bạn gia nhập câu lạc bộ thổi nến.</p>
+                </div>
+                <div class="actionBox">
+                    <ul class="commentList" id="messages">
+                    </ul>
+                    <form id="chat-form" class="form-inline" role="form">
+                        <div class="form-group">
+                            <textarea rows="2" placeholder="Aa" id="chat-message"></textarea> 
+                            <button class="button" id="send-chat">Send</button> 
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+<link rel="stylesheet" href="/assets/css/boxicons.min.css">
+<link rel="stylesheet" href="/assets/css/styles.css">
+<link rel="stylesheet" href="/assets/css/chat-box-css.css">
+<script src="/socket.io/socket.io.js"></script>
+<script src="/assets/js/main.js"></script>
+<script>  
+    const userLocal = localStorage.getItem("userName");
+
+    if (userLocal != null && typeof userLocal !== 'undefined'){
+        var userName = document.querySelector('#user-name');
+        userName.textContent = userLocal;
+    }else{
+        window.location.href = './';
+    }
+
+    const socket = io();
+    const chatForm = document.querySelector('#chat-form');
+    const chatMessage = document.querySelector('#chat-message');
+
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = chatMessage.value;
+        socket.emit('on-chat', {
+            name,
+            message
+        });
+        chatMessage.value = '';
+        chatMessage.focus();
+    });
+
+    const messages = document.querySelector('#messages');
+    socket.on('user-chat', (message) => {
+        const chatItem = createChatItem(message.message);
+        //chatItem.textContent = `${message.name}: ${message.message}`;
+
+        messages.appendChild(chatItem);
+        messages.scrollTop = messages.scrollHeight;
+    });
+
+    const createChatItem = (message) => {
+        let element = document.createElement('li');
+        let dateTimeMessage = getDateTimeToString();
+        element.innerHTML = `<div class="chatUserName">${userLocal}: </div><div class="chatMessage"><p>${message.trim()}</p> <span class="date sub-text">${dateTimeMessage}</span></div>`;
+        return element; 
+    }
+
+    const getDateTimeToString = () => {
+        return new Date().toLocaleString(undefined, {year: 'numeric', month: '2-digit', day: '2-digit', weekday:"long",
+                                         hour: '2-digit', hour12: false, minute:'2-digit', second:'2-digit'});
+    }
+
+    const btcSpan = document.querySelector('#btc-price');
+    const bnbSpan = document.querySelector('#bnb-price');
+    const ethSpan = document.querySelector('#eth-price');
+    let btcLastPrice = 0;
+    let bnbLastPrice = 0;
+    let ethLastPrice = 0;
+
+    socket.on('bitcoin-price', (data) => {
+        const price = data.price;
+        btcSpan.className = btcLastPrice > price ? 'down' : 'up';
+        btcLastPrice = price;
+        btcSpan.textContent = `\t${price} USD`;
+    });
+
+    socket.on('bnb-price', (data) => {
+        const price = data.price;
+        bnbSpan.className = bnbLastPrice > price ? 'down' : 'up';
+        bnbLastPrice = price;
+        bnbSpan.textContent = `\t${price} USD`;
+    });
+
+    socket.on('eth-price', (data) => {
+        const price = data.price;
+        ethSpan.className = ethLastPrice > price ? 'down' : 'up';
+        ethLastPrice = price;
+        ethSpan.textContent = `\t${price} USD`;
+    });
+    
+</script>
+</html>
